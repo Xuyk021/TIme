@@ -95,17 +95,27 @@ def think_and_stream(placeholder, answer_text, delay_seconds=1.0, display=None):
     # 返回最终完整文本，方便存 history
     return accumulated
 
+def question_check(user_input):
+    # 简单示例：检查问题是否以问号结尾
+    if not user_input == 'Is raw milk more nutritious than pasteurized milk?':
+        st.warning("Please ask a question related to milk nutrition.")
+        return False
+    else:
+        return True
+
 if user_input:
     # 用户消息
     with st.chat_message("User_A", avatar=None):
         st.markdown(user_input)
     st.session_state.messages.append({"role": "User_A", "content": user_input})
 
-    # AI 消息
-    with st.chat_message("AI_A"):
-        msg_placeholder = st.empty()       # 整个气泡里只用这一个 placeholder
-        full_answer = get_random_answer()
-        final_text = think_and_stream(msg_placeholder, full_answer, delay_seconds=thinking_time, display=thinking_enabled)
+    if question_check(user_input):
+        
+        # AI 消息
+        with st.chat_message("AI_A"):
+            msg_placeholder = st.empty()       # 整个气泡里只用这一个 placeholder
+            full_answer = get_random_answer()
+            final_text = think_and_stream(msg_placeholder, full_answer, delay_seconds=thinking_time, display=thinking_enabled)
 
-    # 只把最终文本写进 history
-    st.session_state.messages.append({"role": "AI_A", "content": final_text})
+        # 只把最终文本写进 history
+        st.session_state.messages.append({"role": "AI_A", "content": final_text})
