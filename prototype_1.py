@@ -12,7 +12,7 @@ if "messages" not in st.session_state:
 # 先把历史消息画出来（只用最终的 content）
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
-        st.markdown(message["content"])
+        st.markdown(message["content"], unsafe_allow_html=True)
 
 
 mode = st.sidebar.radio(
@@ -61,39 +61,48 @@ def get_random_answer():
 
 # 在同一个 placeholder 里展示 Thinking + 最终答案（没有多余元素）
 def think_and_stream(placeholder, answer_text, delay_seconds=1.0, display=None):
-    # 1) Thinking 动画（复用 placeholder）
+    # 1) Thinking 动画
     gray_scale = ["#cccccc", "#bfbfbf", "#b3b3b3", "#a6a6a6", "#999999",
                   "#8c8c8c", "#808080", "#8c8c8c", "#999999", "#a6a6a6",
                   "#b3b3b3", "#bfbfbf"]
 
     start = time.time()
     idx = 0
-    while display==True & True:
-        elapsed = time.time() - start
-        if elapsed >= delay_seconds:
-            break
-        color = gray_scale[idx % len(gray_scale)]
-        idx += 1
-        placeholder.markdown(
-            f"<span style='color:{color}; font-style:italic;'>Thinking for {elapsed:.1f} s</span>",
-            unsafe_allow_html=True
-        )
-        time.sleep(0.1)
-        placeholder.markdown(
-        f"<span style='color:#999; font-style:italic;'>Thought for {delay_seconds:.1f} s</span>",
-        unsafe_allow_html=True
-    )
-    time.sleep(0.5)
 
-    # 2) 流式输出，仍然复用同一个 placeholder（覆盖掉 Thinking）
+    # 防止 display=None 的情况
+    if display:
+        while True:
+            elapsed = time.time() - start
+            if elapsed >= delay_seconds:
+                break
+            color = gray_scale[idx % len(gray_scale)]
+            idx += 1
+            placeholder.markdown(
+                f"<span style='color:{color}; font-style:italic;'>Thinking for {elapsed:.1f} s</span>",
+                unsafe_allow_html=True
+            )
+            time.sleep(0.1)
+
+        # 这里固定一条最终的 Thought 文本，后面流式输出时一直带着它
+        thought_header = (
+            f"<div style='color:#999; font-style:italic; margin-bottom:10px;'>"
+            f"Thought for {delay_seconds:.1f} s"
+            f"</div>"
+        )
+    else:
+        thought_header = ""
+
+    time.sleep(0.3)
+
+    # 2) 流式输出：每次都在前面加上 thought_header，这样它不会被覆盖
     accumulated = ""
     for word in answer_text.split():
         accumulated += word + " "
-        placeholder.markdown(accumulated)
+        placeholder.markdown(thought_header + accumulated, unsafe_allow_html=True)
         time.sleep(0.03)
 
-    # 返回最终完整文本，方便存 history
-    return accumulated
+    # 把包含 Thought header 的完整 HTML 返回，方便存到 history
+    return thought_header + accumulated
 
 def question_check(user_input):
     # 简单示例：检查问题是否以问号结尾
