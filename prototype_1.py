@@ -19,6 +19,7 @@ mode = st.sidebar.radio(
     "Response mode",
     [
         "No thinking",
+        "No Cues (custom)",
         "Thinking (fixed 2s)",
         "Thinking (custom)",
     ],
@@ -34,6 +35,14 @@ elif mode == "Thinking (custom)":
     thinking_time = st.sidebar.slider(
         "Thinking time (seconds)",
         min_value=2.0,
+        max_value=35.0,
+        value=3.0,
+        step=0.5,
+    )
+elif mode == "No Cues (custom)":
+    thinking_time = st.sidebar.slider(
+        "Thinking time (seconds)",
+        min_value=0.0,
         max_value=35.0,
         value=3.0,
         step=0.5,
@@ -60,7 +69,7 @@ def get_random_answer():
     return random.choice(answers)
 
 # 在同一个 placeholder 里展示 Thinking + 最终答案（没有多余元素）
-def think_and_stream(placeholder, answer_text, delay_seconds=1.0, display=None):
+def think_and_stream(placeholder, answer_text, delay_seconds=1.0, display=None, mode=None):
     # 1) Thinking 动画
     gray_scale = ["#cccccc", "#bfbfbf", "#b3b3b3", "#a6a6a6", "#999999",
                   "#8c8c8c", "#808080", "#8c8c8c", "#999999", "#a6a6a6",
@@ -70,7 +79,7 @@ def think_and_stream(placeholder, answer_text, delay_seconds=1.0, display=None):
     idx = 0
 
     # 防止 display=None 的情况
-    if display:
+    if display and mode != "No Cues (custom)":
         while True:
             elapsed = time.time() - start
             if elapsed >= delay_seconds:
@@ -89,6 +98,9 @@ def think_and_stream(placeholder, answer_text, delay_seconds=1.0, display=None):
             f"Thought for {delay_seconds:.1f} s"
             f"</div>"
         )
+    elif mode == "No Cues (custom)":
+        thought_header = ""
+        time.sleep(delay_seconds)
     else:
         thought_header = ""
 
@@ -124,7 +136,7 @@ if user_input:
         with st.chat_message("AI_A"):
             msg_placeholder = st.empty()       # 整个气泡里只用这一个 placeholder
             full_answer = get_random_answer()
-            final_text = think_and_stream(msg_placeholder, full_answer, delay_seconds=thinking_time, display=thinking_enabled)
+            final_text = think_and_stream(msg_placeholder, full_answer, delay_seconds=thinking_time, display=thinking_enabled, mode=mode)
 
         # 只把最终文本写进 history
         st.session_state.messages.append({"role": "AI_A", "content": final_text})
